@@ -268,6 +268,9 @@ class ExperimentInterface(swap.ui.Interface):
             metavar='directory containing trial files',
             help='Upload trials to mongo database')
 
+        parser.add_argument(
+            '--export-trials', nargs=1)
+
     def call(self, args):
         if args.cutoff:
             cutoff = float(args.cutoff[0])
@@ -315,6 +318,11 @@ class ExperimentInterface(swap.ui.Interface):
         if args.shell:
             import code
             code.interact(local=locals())
+
+        if args.export_trials:
+            path = args.export_tirlas[0]
+            assert e
+            e.save_trials(path)
 
         if args.save:
             assert e

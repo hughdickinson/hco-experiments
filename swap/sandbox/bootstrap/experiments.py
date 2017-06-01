@@ -3,7 +3,11 @@ import swap.plots.distributions as distributions
 from swap import Control
 from swap.utils.golds import GoldGetter
 from swap.agents.agent import Stat
+from swap.utils.scores import ScoreExport
 import swap.db.experiment as dbe
+
+import json
+import os
 
 
 class Trial:
@@ -19,6 +23,31 @@ class Trial:
 
         self.golds = golds
         self.scores = swap_export
+
+    def to_json(self, fname, data={}):
+        data['golds'] = self.golds
+        data['scores'] = self.score_export.scores
+        data['controversial'] = self.controversial
+        data['consensus'] = self.consensus
+
+        with open(fname, 'w') as file:
+            json.dump(data, file)
+
+    @classmethod
+    def from_json(cls, fname):
+        with open(fname) as file:
+            data = json.load(file)
+
+        return cls.parse_json(data)
+
+    @classmethod
+    def parse_json(cls, data):
+        golds = data['golds']
+        scores = ScoreExport(data['scores'])
+        controversial = data['controversial']
+        consensus = data['consensus']
+
+        return Trial(consensus, controversial, golds, scores)
 
     def n_golds(self):
         n = {-1: 0, 0: 0, 1: 0}
@@ -74,6 +103,8 @@ class Experiment:
         self.save_f = saver
         self.p_cutoff = cutoff
 
+        self.save_count = 0
+
     @staticmethod
     def from_trial_export(directory, cutoff, saver, loader):
         files = get_trials(directory)
@@ -122,17 +153,21 @@ class Experiment:
         """
             Saves trial objects to disk to free up memory
         """
-        def to_fname(n):
-            if type(n) is int:
-                return str(n)
-            elif type(n) is tuple:
-                return '_'.join(n)
-            else:
-                return ''
-
-        fname = 'trials_cv_%s_cn_%s.pkl' % (cv, cn)
-        self.save_f(self.trials, fname)
+        # fname = 'trials_cv_%s_cn_%s.pkl' % (cv, cn)
+        self.save_trials()
         self.trials = []
+
+    def save_trials(self, path):
+        trials = sorted(
+            self.trials,
+            key=lambda trial: (trial.controversial, trial.consensus))
+
+        for trial in enumerate(trials):
+            fname = 'trials_%d' % self.save_count
+            fname = os.path.join(path, fname)
+
+            trial.to_json(fname)
+            self.save_count += 1
 
     def add_trial(self, trial):
         self.trials.append(trial)
