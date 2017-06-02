@@ -331,9 +331,27 @@ class ExperimentInterface(swap.ui.Interface):
 
             for fname in files:
                 print(fname)
+                base = os.path.basename(fname)
+                out = os.path.join(export_dir, base)
                 trials = self.load(fname)
+
+                data = []
                 for trial in trials:
-                    trial.to_json(export_dir, 'trial')
+                    item = {}
+                    item['controversial'] = trial.controversial
+                    item['consensus'] = trial.consensus
+                    item['golds'] = trial.golds
+
+                    trial_scores = trial.scores
+                    scores = []
+                    for i in trial_scores.sorted_scores:
+                        score = trial_scores.scores[i]
+                        scores.append((score.id, score.gold, score.p))
+                    item['scores'] = scores
+
+                    data.append(item)
+
+                self.save(data, out)
 
         if args.shell:
             import code

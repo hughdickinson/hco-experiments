@@ -29,7 +29,7 @@ class Trial:
             data = {}
 
         data['golds'] = self.golds
-        data['scores'] = self.scores.scores
+        data['scores'] = list(self.scores.full())
         data['controversial'] = self.controversial
         data['consensus'] = self.consensus
 
