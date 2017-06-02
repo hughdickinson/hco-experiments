@@ -24,38 +24,6 @@ class Trial:
         self.golds = golds
         self.scores = swap_export
 
-    def to_json(self, path, prefix, data=None):
-        if data is None:
-            data = {}
-
-        data['golds'] = self.golds
-        data['scores'] = list(self.scores.full())
-        data['controversial'] = self.controversial
-        data['consensus'] = self.consensus
-
-        fname = prefix + '_cv_%d_cn_%d.json' % \
-            (self.controversial, self.consensus)
-        fname = os.path.join(path, fname)
-
-        with open(fname, 'w') as file:
-            json.dump(data, file)
-
-    @classmethod
-    def from_json(cls, fname):
-        with open(fname) as file:
-            data = json.load(file)
-
-        return cls.parse_json(data)
-
-    @classmethod
-    def parse_json(cls, data):
-        golds = data['golds']
-        scores = ScoreExport(data['scores'])
-        controversial = data['controversial']
-        consensus = data['consensus']
-
-        return Trial(consensus, controversial, golds, scores)
-
     def n_golds(self):
         n = {-1: 0, 0: 0, 1: 0}
         for gold in self.golds.values():
