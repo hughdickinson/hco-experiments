@@ -3,7 +3,7 @@
 # Recursive swap implementation to bootstrap silver-standard
 # subject labels
 from bootstrap import *
-from experiments import Experiment
+from experiments import Experiment, get_trials
 
 import swap.ui
 import swap.plots as plots
@@ -169,7 +169,7 @@ class BootInterface(swap.ui.Interface):
     def confusion_matrix_err(self, bootstrap, args):
         level = int(args.cm[0]) - 1
         swap_name = args.cm[1]
-        fname = self.f(args.cm[2])
+        # fname = self.f(args.cm[2])
 
         swap = self.load(swap_name)
         bswap = bootstrap.getMetric(level).getSWAP()
@@ -271,6 +271,9 @@ class ExperimentInterface(swap.ui.Interface):
         parser.add_argument(
             '--export-trials', nargs=1)
 
+        parser.add_argument(
+            '--convert-trials', nargs=2)
+
     def call(self, args):
         if args.cutoff:
             cutoff = float(args.cutoff[0])
@@ -315,22 +318,34 @@ class ExperimentInterface(swap.ui.Interface):
             elif type_ == 'both':
                 e.plot_both(fname)
 
+        if args.export_trials:
+            path = args.export_trials[0]
+            assert e
+            e.save_trials(path)
+
+        if args.convert_trials:
+            directory = args.convert_trials[0]
+            export_dir = args.convert_trials[1]
+
+            files = get_trials(directory)
+
+            for fname in files:
+                print(fname)
+                trials = self.load(fname)
+                for trial in trials:
+                    trial.to_json(export_dir, 'trial')
+
         if args.shell:
             import code
             code.interact(local=locals())
-
-        if args.export_trials:
-            path = args.export_tirlas[0]
-            assert e
-            e.save_trials(path)
 
         if args.save:
             assert e
             del e.save_f
             self.save(e, self.f(args.save[0]))
 
-        if args.upload:
-            ex.upload_trials(args.upload[0], self.load)
+        # if args.upload:
+        #     e.upload_trials(args.upload[0], self.load)
 
 
 ################################################################

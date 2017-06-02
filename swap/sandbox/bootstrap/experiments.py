@@ -24,11 +24,18 @@ class Trial:
         self.golds = golds
         self.scores = swap_export
 
-    def to_json(self, fname, data={}):
+    def to_json(self, path, prefix, data=None):
+        if data is None:
+            data = {}
+
         data['golds'] = self.golds
-        data['scores'] = self.score_export.scores
+        data['scores'] = self.scores.scores
         data['controversial'] = self.controversial
         data['consensus'] = self.consensus
+
+        fname = prefix + '_cv_%d_cn_%d.json' % \
+            (self.controversial, self.consensus)
+        fname = os.path.join(path, fname)
 
         with open(fname, 'w') as file:
             json.dump(data, file)
