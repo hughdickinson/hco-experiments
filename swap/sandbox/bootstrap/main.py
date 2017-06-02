@@ -4,6 +4,7 @@
 # subject labels
 from bootstrap import *
 from experiments import Experiment, get_trials
+import db.experiment_data as dbe
 
 import swap.ui
 import swap.plots as plots
@@ -274,6 +275,11 @@ class ExperimentInterface(swap.ui.Interface):
         parser.add_argument(
             '--convert-trials', nargs=2)
 
+        parser.add_argument(
+            '--upload-experiment', nargs=2,
+            metavar=('experiment name', 'trials directory'))
+
+
     def call(self, args):
         if args.cutoff:
             cutoff = float(args.cutoff[0])
@@ -322,6 +328,15 @@ class ExperimentInterface(swap.ui.Interface):
             path = args.export_trials[0]
             assert e
             e.save_trials(path)
+
+        if args.upload_experiment:
+            name = args.upload_experiment[0]
+            trials_dir = args.upload_experiment[1]
+
+            for fname in get_trials(trials_dir):
+                print(fname)
+                trials = self.load(fname)
+                dbe.upload_trials(trials, name)
 
         if args.convert_trials:
             directory = args.convert_trials[0]

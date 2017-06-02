@@ -51,23 +51,32 @@ class Trial:
                   control.getSWAP().score_export())
         return t
 
-    def db_export(self):
-        export = {}
-        export['consensus'] = self.consensus
-        export['controversial'] = self.controversial
+    def db_export(self, name):
+        data = []
+        for i in self.scores.sorted_scores:
+            score = self.scores.scores[i]
+            item = self._db_export_id(name)
+            item.update({
+                'subject': score.id,
+                'gold': score.gold,
+                'p': score.p,
+                'used_gold': -1
+            })
+            if score.id in self.golds:
+                item['used_gold'] = self.golds[score.id]
+            data.append(item)
+        return data
 
-        golds = {'0': [], '1': [], '-1': []}
-        for id_, gold in self.golds.items():
-            golds[str(gold)].append(id_)
-        export['golds'] = golds
+    def _db_export_id(self, name):
+        return {
+            'experiment': name,
+            'consensus': self.consensus,
+            'controversial': self.controversial
+        }
 
-        def score_to_bson(score):
-            subject, gold, p = score
-            return {'subject': subject, 'gold': gold, 'score': p}
-
-        export['scores'] = [score_to_bson(x) for x in self.scores.full()]
-
-        return export
+    def __str__(self):
+        s = 'trial cv %d cn %d' % (self.controversial, self.consensus)
+        return s
 
 
 class Experiment:
