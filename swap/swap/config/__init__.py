@@ -83,7 +83,6 @@ class parser:
         'live_project': {'type': bool, 'remap': ['metadata.live_project']},
         'session_id': {'remap': ['metadata.session']},
         'time_stamp': {'type': 'timestamp', 'remap': 'created_at'},
-        'user_agent_string': {'type' : str, 'remap': ['metadata.user_agent']}
     }
 
     _timestamp_format = [
