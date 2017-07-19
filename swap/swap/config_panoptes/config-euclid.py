@@ -70,4 +70,7 @@ def override(config):
     # Name of variable in Caesar
     # config.online_swap.response.field = 'swap_score'
 
+    # Add fields to classification extract and DB schema
+    config.parser.classification.update({'user_agent_string': {'type': str, 'remap': 'metadata.user_agent'})
+
     return None
