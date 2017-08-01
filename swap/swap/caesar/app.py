@@ -73,7 +73,7 @@ def needs_auth(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         auth = request.authorization
-        if not auth or not self._auth.check_auth(auth.username, auth.password):
+        if not auth or not Auth().check_auth(auth.username, auth.password):
             return self._auth.authenticate()
         return func(self, *args, **kwargs)
     return wrapper
@@ -84,10 +84,6 @@ class API:
     def __init__(self, control_thread):
         self.app = Flask(__name__)
         self.control = control_thread
-
-        user = config.online_swap._auth_username
-        token = config.online_swap._auth_key
-        self._auth = Auth(user, token)
 
         self._recent_cl = []
 
@@ -111,12 +107,20 @@ class API:
     def status():
         return Response(config.online_swap.flask_responder.build_responder(config).status_string(), 200)
 
+    def _check_thread(self):
+        return self.control.exit.is_set()
+
     @needs_auth
     def classify(self):
         """
         Receive a classification from caesar and process it
         """
         logger.info('received request')
+
+        if self._check_thread():
+            message = 'Exception in SWAP thread\n%s' % self.control.exception
+            r = Response(message, status=500)
+            return r
 
         # Parse json from request
         data = request.get_json()

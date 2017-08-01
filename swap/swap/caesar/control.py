@@ -1,12 +1,12 @@
 
 import swap.control
 import swap.config as config
+from swap.caesar.utils.caesar_config import CaesarConfig
 from swap.utils.classification import Classification
 from swap.utils.parsers import ClassificationParser
 from swap.db import DB
 import swap.db.db
 
-import sys
 import threading
 import logging
 from queue import Queue
@@ -52,7 +52,7 @@ class OnlineControl(swap.control.Control):
 
         if config.database.name == 'swapDB':
             raise Exception('Refusing to use swapDB database in online mode')
-            sys.exit(1)
+
         logger.debug('Initialized online controller')
 
     def subjects_changed(self):
@@ -133,6 +133,7 @@ class ThreadedControl(threading.Thread):
 
         self._queue = Queue()
         self.exit = threading.Event()
+        self.exception = None
         self.daemon = True
 
         self.control_lock = threading.Lock()
@@ -152,24 +153,20 @@ class ThreadedControl(threading.Thread):
         self._queue.put(Message(command, data, callback))
 
     def classify(self, message):
-        try:
-            classification = message.data
-            if classification is not None:
-                with self.control_lock:
-                    logger.info('classifying')
-                    subject = self.control.classify(classification)
+        classification = message.data
+        if classification is not None:
+            with self.control_lock:
+                logger.info('classifying')
+                subject = self.control.classify(classification)
 
-                    if subject is not None:
-                        logger.info('responding with subject %s score %.4f',
-                                    str(subject.id), subject.score)
-                        message.callback(subject)
-                    else:
-                        logger.info('Already classified, not responding')
-            else:
-                logger.error('Classification was None: %s', str(classification))
-        except Exception:
-            logger.error(e)
-            sys.exit(1)
+                if subject is not None:
+                    logger.info('responding with subject %s score %.4f',
+                                str(subject.id), subject.score)
+                    message.callback(subject)
+                else:
+                    logger.info('Already classified, not responding')
+        else:
+            logger.error('Classification was None: %s', str(classification))
 
     def scores(self):
         with self.control_lock:
@@ -186,18 +183,24 @@ class ThreadedControl(threading.Thread):
         # Ensure thread doesn't exit
         # Wait for classifications in queue
         while not self.exit.is_set():
-
             message = self._queue.get()
             if message is not None:
                 logger.debug('received message')
                 try:
                     self.command(message)
                 except Exception as e:
-                    logger.error(e)
+                    self._exception(e)
                     raise e
-                    sys.exit(1)
 
         logger.warning('thread exiting')
+
+    def _exception(self, e):
+        logger.exception(e)
+
+        self.exception = e
+        self.exit.set()
+
+        CaesarConfig.unregister()
 
 
 class DualCursor:
